@@ -1,66 +1,97 @@
-import React, { useState } from 'react';
-import './CardMaker.css';
+import React, { useState } from "react";
+import "./CardMaker.css";
 
-function CardMaker(props) {
+function CardMaker({ cards, onCreate, onDelete }) {
+
   const [name, setName] = useState("");
   const [image, setImage] = useState("");
   const [rooms, setRooms] = useState("");
   const [price, setPrice] = useState("");
   const [description, setDescription] = useState("");
 
-  function addProperty() {
-    if (!name || !image || !rooms || !price || !description) {
+
+  const addProperty = (e) => {
+    e.preventDefault();
+    if ( !name.trim() || !image.trim() || !rooms || !price || !description.trim())
+    {
       alert("Please fill in all fields.");
       return;
     }
+    const newCard = {
+      id: Date.now(),
+      name,
+      image,
+      rooms: Number(rooms),
+      price: Number(price),
+      description
+    };
 
-    const newCard = { name, image, rooms: Number(rooms), price: Number(price), description };
-    props.onCreate(newCard);
+    onCreate(newCard);
 
-    setName(""); setImage(""); setRooms(""); setPrice(""); setDescription("");
-  }
+    setName("");
+    setImage("");
+    setRooms("");
+    setPrice("");
+    setDescription("");
+  };
 
   return (
+
     <div className="cardmaker-wrapper">
       <div className="form-section">
-        <h2 className="section-title">Create Card Entry</h2>
-        <div className="form-grid">
+        <h2 className="section-title"> Create Property Card</h2>
+        <form className="form-grid" onSubmit={addProperty}>
           <div className="form-group">
             <label>Property Name</label>
-            <input type="text" value={name} onChange={(e) => setName(e.target.value)} placeholder="Enter property name" />
+            <input type="text" placeholder="Enter property name" value={name}onChange={(e)=> setName(e.target.value)}/>
           </div>
           <div className="form-group">
             <label>Image URL</label>
-            <input type="text" value={image} onChange={(e) => setImage(e.target.value)} placeholder="Enter image URL" />
+            <input type="text" placeholder="Enter image URL" value={image} onChange={(e)=> setImage(e.target.value)}/>
           </div>
           <div className="form-group">
-            <label>Rooms</label>
-            <input type="number" value={rooms} onChange={(e) => setRooms(e.target.value)} placeholder="Enter number of rooms" />
+            <label>Number of Rooms</label>
+            <input type="number" placeholder="Enter rooms" value={rooms} onChange={(e)=> setRooms(e.target.value)}/>
           </div>
           <div className="form-group">
             <label>Price (KES)</label>
-            <input type="number" value={price} onChange={(e) => setPrice(e.target.value)} placeholder="Enter price" />
+            <input type="number" placeholder="Enter price" value={price} onChange={(e)=> setPrice(e.target.value)}/>
           </div>
           <div className="form-group full-width">
             <label>Description</label>
-            <textarea value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Enter property description" />
+            <textarea placeholder="Enter description" value={description} onChange={(e)=> setDescription(e.target.value)}/>
           </div>
-        </div>
-        <button className="add-btn" onClick={addProperty}>Add Card</button>
+          <button className="add-btn" type="submit">Add Card</button>
+        </form>
       </div>
-
       <h2 className="section-title">Owner's Properties</h2>
       <div className="card-container">
-        {props.cards.map((card, index) => (
-          <div key={index} className="card">
-            <h3>{card.name}</h3>
-            <img src={card.image} alt={card.name} />
-            <p><strong>Rooms:</strong> {card.rooms}</p>
-            <p><strong>Price:</strong> KES {Number(card.price).toFixed(2)}</p>
-            <p className="description">{card.description}</p>
-            <button className="delete-btn" onClick={() => props.onDelete(index)}>Delete</button>
-          </div>
-        ))}
+        {cards.length === 0 ? 
+        ( <p>No properties created yet.</p> )
+        :
+        (cards.map((card)=> 
+          ( <div key={card.id} className="card">
+              <h3>{card.name}</h3>
+              <img src={card.image} alt={card.name} />
+              <p>
+                <strong>Rooms:</strong>
+                {" "}
+                {card.rooms}
+              </p>
+              <p>
+                <strong>Price:</strong>
+                {" "}
+                KES {card.price.toFixed(2)}
+              </p>
+              <p className="description">{card.description}</p>
+              <button className="delete-btn" onClick={() => onDelete(card.id)}>
+                Delete
+              </button>
+            </div>
+          )
+        )
+        )}
+
       </div>
     </div>
   );

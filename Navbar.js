@@ -1,34 +1,34 @@
-import React, { useState } from 'react';
+import React, { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import * as FaIcons from "react-icons/fa";
 import * as AiIcons from "react-icons/ai";
-import { Link } from 'react-router-dom';
-import './Navbar.css';
-import { IconContext } from 'react-icons';
+import { IconContext } from "react-icons";
+import "./Navbar.css";
 
-function Navbar({ sidebarData, role, setRole }) {
+function Navbar({ sidebarData, logout }) {
   const [sidebar, setSidebar] = useState(false);
-  const showSidebar = () => setSidebar(!sidebar);
+  const navigate = useNavigate();
+  const showSidebar = () => { setSidebar(!sidebar);};
+
+  const handleLogout = () => 
+  {
+    logout();
+    navigate("/login");
+  };
 
   return (
-    <IconContext.Provider value={{ color: '#fff' }}>
-      <div className='navbar'>
-        <Link to='#' className='menu-bars'>
+    <IconContext.Provider value={{ color: "#fff" }}>
+      <div className="navbar">
+        <Link to="#" className="menu-bars">
           <FaIcons.FaBars onClick={showSidebar} />
         </Link>
-
-        Role switcher button
-        <button 
-          className="role-switcher" 
-          onClick={() => setRole(role === "owner" ? "tenant" : "owner")}
-        >
-          Switch to {role === "owner" ? "Tenant" : "Owner"}
-        </button>
+        <h2 className="navbar-title">Property Management System</h2>
+        <button className="logout-btn" onClick={handleLogout}>Logout</button>
       </div>
-
-      <nav className={`nav-menu ${sidebar ? 'active' : ''} ${role}`}>
-        <ul className='nav-menu-items' onClick={showSidebar}>
-          <li className='navbar-toggle'>
-            <Link to='#' className='menu-bars'>
+      <nav className={sidebar ? "nav-menu active" : "nav-menu"}>
+        <ul className="nav-menu-items" onClick={showSidebar}>
+          <li className="navbar-toggle">
+            <Link to="#" className="menu-bars">
               <AiIcons.AiOutlineClose />
             </Link>
           </li>
@@ -45,4 +45,5 @@ function Navbar({ sidebarData, role, setRole }) {
     </IconContext.Provider>
   );
 }
+
 export default Navbar;

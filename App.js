@@ -1,114 +1,142 @@
-import React, { useState, useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom';
-
-import LoginForm from "./components/SignupAndLogin/LoginPage";
-import SignupForm from "./components/SignupAndLogin/SignupPage";
-
-
-import Navbar from './components/Navbar';
-import { OwnerSidebarData } from './components/sidebars/OwnerSidebarData';
-import { TenantSidebarData } from './components/sidebars/TenantSidebarData';
-
-import CardMaker from './components/CardMaker';
-import TenantView from './components/TenantView';
-import TenantCard from './components/TenantCard';
+import React, { useState, useEffect } from "react";
+import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
+import Navbar from "./components/Navbar";
+import LoginPage from "./components/SignupAndLogin/LoginPage";
+import SignupPage from "./components/SignupAndLogin/SignupPage";
+import CardMaker from "./components/CardMaker";
+import TenantView from "./components/TenantView";
+import TenantCard from "./components/TenantCard";
+import { OwnerSidebarData } from "./components/sidebars/OwnerSidebarData";
+import { TenantSidebarData } from "./components/sidebars/TenantSidebarData";
 
 function AppContent() {
-  const [cards, setCards] = useState([]);
-  const [tenantCards, setTenantCards] = useState([]);
-  const [role, setRole] = useState("owner");
-  const navigate = useNavigate();
-  const location = useLocation();
+  // ==========================
+  // Logged-in user role
+  // ==========================
 
-  // Redirect only when role changes, not on every click
-  useEffect(() => {
-    if (role === "owner" && !location.pathname.startsWith("/cardmaker") && !location.pathname.startsWith("/tenantview")) {
-      navigate("/cardmaker", { replace: true });
+  const [role, setRole] = useState(localStorage.getItem("role") || null);
+
+  // ==========================
+  // Owner Properties
+  // ==========================
+
+  const [cards, setCards] = useState(() => 
+  {
+    const saved = localStorage.getItem("cards");
+    return saved ? JSON.parse(saved) : [];
+  });
+
+  // ==========================
+  // Tenant Saved Properties
+  // ==========================
+
+  const [tenantCards, setTenantCards] = useState(() => 
+  {
+    const saved = localStorage.getItem("tenantCards");
+    return saved ? JSON.parse(saved) : [];
+  });
+
+  // ==========================
+  // Save data automatically
+  // ==========================
+
+  useEffect(() => 
+  {
+    localStorage.setItem("cards", JSON.stringify(cards));
+  }, [cards]);
+
+  useEffect(() => 
+  {
+    localStorage.setItem("tenantCards", JSON.stringify(tenantCards));
+  }, [tenantCards]);
+
+  useEffect(() => 
+  {
+    if (role) 
+    {
+      localStorage.setItem("role", role);
     }
-    if (role === "tenant" && !location.pathname.startsWith("/tenantview") && !location.pathname.startsWith("/tenantcard")) {
-      navigate("/tenantview", { replace: true });
+    else
+    {
+      localStorage.removeItem("role");
     }
-  }, [role, navigate, location]);
+  }, [role]);
 
-  const handleCreate = (newCard) => setCards([...cards, newCard]);
+  // ==========================
+  // Property Functions
+  // ==========================
 
-  const handleDelete = (index) => {
-    const cardToDelete = cards[index];
-    const updatedCards = cards.filter((_, i) => i !== index);
-    const updatedTenantCards = tenantCards.filter(
-      (card) => card.name !== cardToDelete.name
-    );
-    setCards(updatedCards);
-    setTenantCards(updatedTenantCards);
+  const createCard = (newCard) => 
+  {
+    setCards((prev) => [...prev, newCard]);
   };
 
-  const handleAdd = (index) => {
-    const cardToAdd = cards[index];
-    setTenantCards([...tenantCards, cardToAdd]);
-    setCards(cards.filter((_, i) => i !== index));
+  const deleteCard = (id) => 
+  {
+    setCards((prev) => prev.filter((card) => card.id !== id));
+    setTenantCards((prev) => prev.filter((card) => card.id !== id));
   };
 
-  const handleRemove = (index) => {
-    const cardToRemove = tenantCards[index];
-    setTenantCards(tenantCards.filter((_, i) => i !== index));
-    setCards([...cards, cardToRemove]);
+  const addTenantCard = (id) => 
+  {
+    const property = cards.find((card) => card.id === id);
+
+    if (!property) return;
+
+    setTenantCards((prev) => [...prev, property]);
+    setCards((prev) => prev.filter((card) => card.id !== id));
   };
+
+  const removeTenantCard = (id) => 
+  {
+    const property = tenantCards.find((card) => card.id === id);
+
+    if (!property) return;
+
+    setCards((prev) => [...prev, property]);
+    setTenantCards((prev) => prev.filter((card) => card.id !== id));
+  };
+
+  // ==========================
+  // Logout
+  // ==========================
+
+  const logout = () => {setRole(null);};
 
   return (
     <>
-      <Navbar 
-        sidebarData={role === "owner" ? OwnerSidebarData : TenantSidebarData} 
-        role={role} 
-        setRole={setRole} 
-      />
+      {role && ( <Navbar sidebarData={ role === "owner" ? OwnerSidebarData : TenantSidebarData } logout={logout} /> )}
 
       <Routes>
+        {/* Login */}
+        <Route path="/login" element={<LoginPage setRole={setRole} />} />
+        {/* Signup */}
+        <Route path="/signup" element={<SignupPage setRole={setRole} />} />
+        {/* Owner */}
+        <Route path="/cardmaker" element={ role === "owner" ? 
+          ( <CardMaker cards={cards} onCreate={createCard} onDelete={deleteCard} />) : 
+          (<Navigate to="/login" replace /> )
+        }/>
+        {/* Shared Tenant View */}
+        <Route path="/tenantview" element={
+            role ? 
+            ( <TenantView cards={cards} onAdd={addTenantCard} />) : 
+            ( <Navigate to="/login" replace /> )} />
 
-        {/*These are the login and signup page routes*/}
-        <Route path="/login" element={<LoginForm />} />
-        <Route path="/signup" element={<SignupForm />} />
-
-        {/* Owner-only routes */}
-        {role === "owner" && (
-          <>
-            <Route path="/cardmaker" element={
-              <CardMaker cards={cards} onCreate={handleCreate} onDelete={handleDelete} />
-            } />
-            <Route path="/tenantview" element={
-              <TenantView cards={cards} onAdd={handleAdd} />
-            } />
-            <Route path="/tenantcard" element={<Navigate to="/cardmaker" />} />
-          </>
-        )
-        }
-
-        {/* Tenant-only routes */}
-        {role === "tenant" && (
-          <>
-            <Route path="/tenantview" element={
-              <TenantView cards={cards} onAdd={handleAdd} />
-            } />
-            <Route path="/tenantcard" element={
-              <TenantCard tenantCards={tenantCards} onRemove={handleRemove} />
-            } />
-            <Route path="/cardmaker" element={<Navigate to="/tenantview" />} />
-          </>
-        )}
-
-        {/* Fallback */}
-        <Route path="*" element={<Navigate to={role === "owner" ? "/cardmaker" : "/tenantview"} />} />
-
-  
-        </Routes>
-
-
-
-
-
-
-
-
-
+        {/* Tenant */}
+        <Route path="/tenantcard" element={role === "tenant" ? 
+        ( <TenantCard tenantCards={tenantCards} onRemove={removeTenantCard} /> )
+        :
+        ( <Navigate to="/login" replace /> )
+        }/>
+        {/* Default */}
+        <Route path="/" element={ role ?
+        ( <Navigate to={ role === "owner" ? "/cardmaker" : "/tenantview" } replace/>)
+        : 
+        ( <Navigate to="/login" replace />)}/>
+        {/* Unknown */}
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
     </>
   );
 }
